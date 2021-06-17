@@ -3,7 +3,9 @@ package ru.itis.services;
 import ru.itis.tracing.framework.annotations.Trace;
 
 import java.util.Random;
+import org.springframework.stereotype.Service;
 
+@Service
 public class TestService {
 
     @Trace

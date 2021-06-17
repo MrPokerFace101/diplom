@@ -1,19 +1,18 @@
 package ru.itis.tracing.framework.controller;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.data.util.Pair;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import ru.itis.tracing.framework.MethodStatService;
-import ru.itis.tracing.framework.entities.MethodStat;
+import ru.itis.tracing.framework.entities.Method;
+import ru.itis.tracing.framework.services.MethodStatService;
 
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
 @Controller
-@ConditionalOnProperty(name = "tracing", value = "true")
+@ConditionalOnBean(MethodStatService.class)
 public class StatsController {
 
     private final MethodStatService methodStatService;
@@ -24,25 +23,32 @@ public class StatsController {
 
     @GetMapping("/method-stats")
     public String allStatsPage(Model model) {
-        Map<String, Pair<Long, Long>> stats = methodStatService.loadAllStats();
-        if(stats == null) {
-            model.addAttribute("stats-empty", true);
+        List<Method> methodList = methodStatService.loadAllStats();
+        if(methodList == null || methodList.isEmpty()) {
+            model.addAttribute("statsEmpty", true);
         } else {
-            model.addAttribute("stats-empty", false);
-            model.addAttribute("stats", stats);
+            model.addAttribute("statsEmpty", false);
+            model.addAttribute("stats", methodList);
         }
         return "all-method-stats";
     }
 
     @GetMapping("/method-stats/{methodName}")
     public String loadMethodStats(Model model, @PathVariable String methodName) {
-        List<MethodStat> list = methodStatService.loadMethodStats(methodName);
-        if(list.isEmpty()) {
+        Optional<Method> methodOptional = methodStatService.findMethodByName(methodName);
+        if(!methodOptional.isPresent()) {
             model.addAttribute("method-stats-empty", true);
         } else {
             model.addAttribute("method-stats-empty", false);
-            model.addAttribute("method-stats", list);
+            model.addAttribute("stats", methodOptional.get());
         }
         return "method-stats";
+    }
+
+    @GetMapping("/method-stats/request")
+    public List<Method> sendData() {
+        List<Method> stats = methodStatService.findAll();
+        methodStatService.deleteAll();
+        return stats;
     }
 }
